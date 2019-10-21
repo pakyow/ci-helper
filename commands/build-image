@@ -1,0 +1,37 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+# Builds the base image for running containerized CI on DigitalOcean.
+
+IMAGES = %w[
+  pakyow/ci-ruby-2.5.7
+  pakyow/ci-ruby-2.6.5
+  pakyow/ci-ruby-head
+].freeze
+
+require "dotenv"
+Dotenv.load(".env.local", ".env")
+$LOAD_PATH.unshift File.expand_path(".", "lib")
+
+require "pakyow/ci/remote/system"
+Pakyow::CI::Remote::System.new.ephemeral(name: "pakyow-ci-#{Time.now.to_i}", ssh_keys: [ENV["DIGITAL_OCEAN_SSH_FINGERPRINT"]]) do |server|
+  server.shell do |shell|
+    # Install Docker.
+    #
+    shell.run "curl -fsSL https://get.docker.com -o get-docker.sh"
+    shell.run "sh get-docker.sh"
+    shell.run "rm get-docker.sh"
+
+    # Install Docker Compose.
+    #
+    shell.run "curl -L \"https://github.com/docker/compose/releases/download/1.24.1/docker-compose-$(uname -s)-$(uname -m)\" -o /usr/local/bin/docker-compose"
+    shell.run "chmod +x /usr/local/bin/docker-compose"
+
+    # Cache the images.
+    #
+    IMAGES.each do |image|
+      shell.run "docker pull #{image}"
+    end
+  end
+
+  server.snapshot!
+end

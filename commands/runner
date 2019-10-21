@@ -1,0 +1,73 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+# Runs containerized CI on a base image on DigitalOcean.
+
+REQUIRED_OPTIONS = %i[
+  ruby
+].freeze
+
+require "dotenv"
+Dotenv.load(".env.local", ".env")
+$LOAD_PATH.unshift File.expand_path(".", "lib")
+
+# Parse command line options.
+#
+options = {}
+require "optparse"
+OptionParser.new { |parser|
+  parser.banner = "Usage: example.rb [options]"
+
+  parser.on("-rRUBY", "--ruby=RUBY", "Ruby version to use") do |ruby|
+    options[:ruby] = ruby
+  end
+
+  parser.on("-sSIZE", "--size=SIZE", "Droplet size (default: s-1vcpu-1gb)") do |size|
+    options[:size] = size
+  end
+
+  parser.on("-h", "--help", "Prints this help") do
+    puts parser
+    exit
+  end
+}.parse!
+
+# Validate command line options.
+#
+REQUIRED_OPTIONS.each do |required_option|
+  fail "#{required_option} is a required argument" unless options.include?(required_option)
+end
+
+# Set default values for options.
+#
+options[:size] ||= "s-1vcpu-1gb"
+
+# Make sure a command was passed.
+#
+fail "please pass a command to run" if ARGV.empty?
+
+# Find the latest snapshot.
+#
+require "droplet_kit"
+snapshot = DropletKit::Client.new(access_token: ENV["DIGITAL_OCEAN_KEY"]).snapshots.all.select { |s|
+  s.name.start_with?("pakyow-ci")
+}.sort_by(&:name).first
+
+exit_code = exit_code
+require "pakyow/ci/remote/system"
+Pakyow::CI::Remote::System.new.ephemeral(name: "pakyow-ci-#{Time.now.to_i}", ssh_keys: [ENV["DIGITAL_OCEAN_SSH_FINGERPRINT"]], image: snapshot.id) do |server|
+  server.shell do |shell|
+    # TODO: Running from a github action, this should upload with scp.
+    #
+    # We'll need to create a key, uploading public key to DO and creating the droplet. Then store the
+    # private key as a secret in Github, write it to a file, and pass it here.
+    #
+    # Net::SCP.upload!(ip_address, "root", "./README.md", "/root", ssh: { keys: ["~/.ssh/id_rsa"] })
+
+    shell.run "git clone https://github.com/pakyow/pakyow.git"
+    shell.run "cd pakyow; docker-compose build --build-arg ruby=#{options[:ruby]}"
+    exit_code = shell.run "cd pakyow; docker-compose run pakyow-ci '#{ARGV.join(" ")}'"
+  end
+end
+
+puts "exiting: #{exit_code}"
+exit exit_code
