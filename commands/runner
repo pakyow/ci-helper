@@ -57,7 +57,14 @@ require "pakyow/ci/remote/system"
 
 begin
   Pakyow::CI::Remote::System.new.ephemeral(name: "pakyow-ci-#{Time.now.to_i}", ssh_keys: [ENV["DIGITAL_OCEAN_SSH_FINGERPRINT"]], image: snapshot.id) do |server|
-    server.shell(keys: [ENV["SSH_PRIVATE_KEY_PATH"]]) do |shell|
+    keys = [ENV["SSH_PRIVATE_KEY_PATH"]]
+    puts "opening remote shell with keys: #{keys}"
+
+    keys.each do |key|
+      fail "missing key: #{key}" unless File.exist?(key)
+    end
+
+    server.shell(keys: keys) do |shell|
       # TODO: Running from a github action, this should upload with scp.
       #
       # We'll need to create a key, uploading public key to DO and creating the droplet. Then store the
