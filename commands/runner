@@ -68,7 +68,7 @@ begin
     puts "opening remote shell with keys: #{keys}"
 
     keys.each do |key|
-      fail "missing key: #{key}" unless File.exist?(key)
+      fail "missing key: #{key}" unless File.exist?(File.expand_path(key))
     end
 
     server.shell(keys: keys) do |shell|
