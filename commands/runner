@@ -17,6 +17,10 @@ require "optparse"
 OptionParser.new { |parser|
   parser.banner = "Usage: example.rb [options]"
 
+  parser.on("-eENVAR", "--env=ENVAR", "Set an envar") do |envar|
+    (options[:env] ||= []) << envar
+  end
+
   parser.on("-rRUBY", "--ruby=RUBY", "Ruby version to use") do |ruby|
     options[:ruby] = ruby
   end
@@ -75,7 +79,7 @@ begin
       path_to_upload = File.expand_path(".")
       shell.upload path_to_upload
       shell.run "cd #{File.basename(path_to_upload)}; docker-compose build --build-arg ruby=#{options[:ruby]}"
-      exit_code = shell.run "cd #{File.basename(path_to_upload)}; docker-compose run pakyow-ci '#{ARGV.join(" ")}'"
+      exit_code = shell.run "cd #{File.basename(path_to_upload)}; docker-compose run #{options[:env].to_a.map { |e| "-e #{e}"}.join(" ")} pakyow-ci '#{ARGV.join(" ")}'"
     end
   end
 rescue => error
