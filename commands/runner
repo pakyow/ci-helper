@@ -72,16 +72,10 @@ begin
     end
 
     server.shell(keys: keys) do |shell|
-      # TODO: Running from a github action, this should upload with scp.
-      #
-      # We'll need to create a key, uploading public key to DO and creating the droplet. Then store the
-      # private key as a secret in Github, write it to a file, and pass it here.
-      #
-      # Net::SCP.upload!(ip_address, "root", "./README.md", "/root", ssh: { keys: ["~/.ssh/id_rsa"] })
-
-      shell.run "git clone https://github.com/pakyow/pakyow.git"
-      shell.run "cd pakyow; docker-compose build --build-arg ruby=#{options[:ruby]}"
-      exit_code = shell.run "cd pakyow; docker-compose run pakyow-ci '#{ARGV.join(" ")}'"
+      path_to_upload = File.expand_path(".")
+      shell.upload path_to_upload
+      shell.run "cd #{File.basename(path_to_upload)}; docker-compose build --build-arg ruby=#{options[:ruby]}"
+      exit_code = shell.run "cd #{File.basename(path_to_upload)}; docker-compose run pakyow-ci '#{ARGV.join(" ")}'"
     end
   end
 rescue => error

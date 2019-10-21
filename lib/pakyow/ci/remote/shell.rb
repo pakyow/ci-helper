@@ -54,6 +54,10 @@ module Pakyow
           exit_code
         end
 
+        def upload(path)
+          Net::SCP.upload!(@server.address, "root", path, "/root", ssh: { keys: @keys }, recursive: true)
+        end
+
         private
 
         def wait_until_available
