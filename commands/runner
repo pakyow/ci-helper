@@ -54,19 +54,26 @@ snapshot = DropletKit::Client.new(access_token: ENV["DIGITAL_OCEAN_KEY"]).snapsh
 
 exit_code = exit_code
 require "pakyow/ci/remote/system"
-Pakyow::CI::Remote::System.new.ephemeral(name: "pakyow-ci-#{Time.now.to_i}", ssh_keys: [ENV["DIGITAL_OCEAN_SSH_FINGERPRINT"]], image: snapshot.id) do |server|
-  server.shell(keys: [ENV["SSH_PRIVATE_KEY_PATH"]]) do |shell|
-    # TODO: Running from a github action, this should upload with scp.
-    #
-    # We'll need to create a key, uploading public key to DO and creating the droplet. Then store the
-    # private key as a secret in Github, write it to a file, and pass it here.
-    #
-    # Net::SCP.upload!(ip_address, "root", "./README.md", "/root", ssh: { keys: ["~/.ssh/id_rsa"] })
 
-    shell.run "git clone https://github.com/pakyow/pakyow.git"
-    shell.run "cd pakyow; docker-compose build --build-arg ruby=#{options[:ruby]}"
-    exit_code = shell.run "cd pakyow; docker-compose run pakyow-ci '#{ARGV.join(" ")}'"
+begin
+  Pakyow::CI::Remote::System.new.ephemeral(name: "pakyow-ci-#{Time.now.to_i}", ssh_keys: [ENV["DIGITAL_OCEAN_SSH_FINGERPRINT"]], image: snapshot.id) do |server|
+    server.shell(keys: [ENV["SSH_PRIVATE_KEY_PATH"]]) do |shell|
+      # TODO: Running from a github action, this should upload with scp.
+      #
+      # We'll need to create a key, uploading public key to DO and creating the droplet. Then store the
+      # private key as a secret in Github, write it to a file, and pass it here.
+      #
+      # Net::SCP.upload!(ip_address, "root", "./README.md", "/root", ssh: { keys: ["~/.ssh/id_rsa"] })
+
+      shell.run "git clone https://github.com/pakyow/pakyow.git"
+      shell.run "cd pakyow; docker-compose build --build-arg ruby=#{options[:ruby]}"
+      exit_code = shell.run "cd pakyow; docker-compose run pakyow-ci '#{ARGV.join(" ")}'"
+    end
   end
+rescue => error
+  puts "failed: #{error}"
+  puts error.backtrace
+  exit_code = 1
 end
 
 puts "exiting: #{exit_code}"
