@@ -29,8 +29,8 @@ module Pakyow
 
         # Yields a `Remote::Shell` instance ready for running commands.
         #
-        def shell(&block)
-          Shell.new(self).when_available(&block)
+        def shell(**options, &block)
+          Shell.new(self, **options).when_available(&block)
         end
 
         # Create a snapshot of the server.

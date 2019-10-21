@@ -55,7 +55,7 @@ snapshot = DropletKit::Client.new(access_token: ENV["DIGITAL_OCEAN_KEY"]).snapsh
 exit_code = exit_code
 require "pakyow/ci/remote/system"
 Pakyow::CI::Remote::System.new.ephemeral(name: "pakyow-ci-#{Time.now.to_i}", ssh_keys: [ENV["DIGITAL_OCEAN_SSH_FINGERPRINT"]], image: snapshot.id) do |server|
-  server.shell do |shell|
+  server.shell(keys: [ENV["SSH_PRIVATE_KEY_PATH"]]) do |shell|
     # TODO: Running from a github action, this should upload with scp.
     #
     # We'll need to create a key, uploading public key to DO and creating the droplet. Then store the
