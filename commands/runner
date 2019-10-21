@@ -71,8 +71,11 @@ begin
     end
   end
 rescue => error
-  puts "failed: #{error}"
-  puts error.backtrace
+  puts <<~ERROR
+    failed: #{error}
+    #{error.backtrace.join}
+  ERROR
+
   exit_code = 1
 end
 
