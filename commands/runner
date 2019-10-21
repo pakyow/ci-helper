@@ -56,7 +56,14 @@ exit_code = exit_code
 require "pakyow/ci/remote/system"
 
 begin
-  Pakyow::CI::Remote::System.new.ephemeral(name: "pakyow-ci-#{Time.now.to_i}", ssh_keys: [ENV["DIGITAL_OCEAN_SSH_FINGERPRINT"]], image: snapshot.id) do |server|
+  ephemeral_options = {
+    name: "pakyow-ci-#{Time.now.to_i}",
+    ssh_keys: [ENV["DIGITAL_OCEAN_SSH_FINGERPRINT"]],
+    image: snapshot.id
+  }
+
+  puts "creating ephemeral server: #{ephemeral_options}"
+  Pakyow::CI::Remote::System.new.ephemeral(**ephemeral_options) do |server|
     keys = [ENV["SSH_PRIVATE_KEY_PATH"]]
     puts "opening remote shell with keys: #{keys}"
 
