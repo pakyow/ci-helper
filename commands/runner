@@ -87,7 +87,7 @@ begin
 rescue => error
   puts <<~ERROR
     failed: #{error}
-    #{error.backtrace.join}
+    #{error.backtrace.join("\n")}
   ERROR
 
   exit_code = 1
