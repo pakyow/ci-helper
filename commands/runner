@@ -59,7 +59,7 @@ fail "please pass a command to run" if ARGV.empty?
 require "droplet_kit"
 snapshot = DropletKit::Client.new(access_token: ENV["DIGITAL_OCEAN_KEY"]).snapshots.all.select { |s|
   s.name.start_with?("pakyow-ci")
-}.sort_by(&:name).first
+}.sort_by(&:name).last
 
 exit_code = exit_code
 require "pakyow/ci/remote/system"
