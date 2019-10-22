@@ -22,6 +22,10 @@ OptionParser.new { |parser|
     (options[:env] ||= []) << envar
   end
 
+  parser.on("-fFORMATION", "--formation=FORMATION", "Describe the formation") do |formation|
+    options[:formation] = formation
+  end
+
   parser.on("-pPATH", "--path=PATH", "Path to upload for testing") do |path|
     options[:path] = path
   end
@@ -68,7 +72,8 @@ begin
   ephemeral_options = {
     name: "pakyow-ci-#{Time.now.to_i}",
     ssh_keys: [ENV["DIGITAL_OCEAN_SSH_FINGERPRINT"]],
-    image: snapshot.id
+    image: snapshot.id,
+    size: options[:size] || "s-1vcpu-1gb"
   }
 
   puts "creating ephemeral server: #{ephemeral_options}"
@@ -87,14 +92,19 @@ begin
 
       if File.extname(path_to_upload) == ".zip"
         shell.run "unzip -q #{File.basename(path_to_upload)}"
-        shell.run "ls -al"
         remote_folder = File.basename(path_to_upload, File.extname(path_to_upload))
       else
         remote_folder = File.basename(path_to_upload)
       end
 
       shell.run "cd #{remote_folder}; docker-compose build --build-arg ruby=#{options[:ruby]}"
-      exit_code = shell.run "cd #{remote_folder}; docker-compose run #{options[:env].to_a.map { |e| "-e #{e}"}.join(" ")} pakyow-ci '#{ARGV.join(" ")}'"
+
+      exit_code = if options[:formation]
+        shell.run "cd #{remote_folder}; docker-compose up -d #{options[:formation]}" unless options[:formation].empty?
+        shell.run "cd #{remote_folder}; docker-compose run --no-deps #{options[:env].to_a.map { |e| "-e #{e}"}.join(" ")} pakyow-ci '#{ARGV.join(" ")}'"
+      else
+        shell.run "cd #{remote_folder}; docker-compose run #{options[:env].to_a.map { |e| "-e #{e}"}.join(" ")} pakyow-ci '#{ARGV.join(" ")}'"
+      end
     end
   end
 rescue => error
