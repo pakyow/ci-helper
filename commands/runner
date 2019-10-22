@@ -69,8 +69,10 @@ exit_code = exit_code
 require "pakyow/ci/remote/system"
 
 begin
+  require "securerandom"
+
   ephemeral_options = {
-    name: "pakyow-ci-#{Time.now.to_i}",
+    name: "pakyow-ci-#{SecureRandom.hex(2)}-#{Time.now.to_i}",
     ssh_keys: [ENV["DIGITAL_OCEAN_SSH_FINGERPRINT"]],
     image: snapshot.id,
     size: options[:size] || "s-1vcpu-1gb"
