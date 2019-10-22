@@ -23,7 +23,8 @@ module Pakyow
               region: region,
               image: image,
               size: size,
-              ssh_keys: ssh_keys
+              ssh_keys: ssh_keys,
+              monitoring: true
             )
           )
 
