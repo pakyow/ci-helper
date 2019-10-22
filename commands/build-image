@@ -15,6 +15,10 @@ $LOAD_PATH.unshift File.expand_path(".", "lib")
 require "pakyow/ci/remote/system"
 Pakyow::CI::Remote::System.new.ephemeral(name: "pakyow-ci-#{Time.now.to_i}", ssh_keys: [ENV["DIGITAL_OCEAN_SSH_FINGERPRINT"]]) do |server|
   server.shell do |shell|
+    # Install unzip.
+    #
+    shell.run "apt-get -y install unzip"
+
     # Install Docker.
     #
     shell.run "curl -fsSL https://get.docker.com -o get-docker.sh"
