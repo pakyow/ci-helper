@@ -84,8 +84,17 @@ begin
       path_to_upload = File.expand_path(options[:path])
       puts "uploading: #{path_to_upload}"
       shell.upload path_to_upload
-      shell.run "cd #{File.basename(path_to_upload)}; docker-compose build --build-arg ruby=#{options[:ruby]}"
-      exit_code = shell.run "cd #{File.basename(path_to_upload)}; docker-compose run #{options[:env].to_a.map { |e| "-e #{e}"}.join(" ")} pakyow-ci '#{ARGV.join(" ")}'"
+
+      if File.extname(path_to_upload) == ".zip"
+        shell.run "unzip #{File.basename(path_to_upload)}"
+        shell.run "ls -al"
+        remote_folder = File.basename(path_to_upload, File.extname(path_to_upload))
+      else
+        remote_folder = File.basename(path_to_upload)
+      end
+
+      shell.run "cd #{remote_folder}; docker-compose build --build-arg ruby=#{options[:ruby]}"
+      exit_code = shell.run "cd #{remote_folder}; docker-compose run #{options[:env].to_a.map { |e| "-e #{e}"}.join(" ")} pakyow-ci '#{ARGV.join(" ")}'"
     end
   end
 rescue => error
