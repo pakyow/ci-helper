@@ -1,30 +1,23 @@
 # frozen_string_literal: true
 
-require "droplet_kit"
-
 require "pakyow/ci/remote/shell"
 
 module Pakyow
   module CI
     module Remote
-      # Wraps a DigitalOcean droplet.
+      # A remote server.
       #
       class Server
-        def initialize(droplet, client: nil, digital_ocean_key: ENV["DIGITAL_OCEAN_KEY"])
-          @droplet = droplet
-          @client = client || DropletKit::Client.new(access_token: digital_ocean_key)
+        def initialize(attributes:, provider:)
+          @attributes, @provider = attributes, provider
         end
 
-        # Unique identifier of the server.
-        #
-        def id
-          @droplet.id
+        def name
+          @attributes["name"]
         end
 
-        # Public ip address of the server.
-        #
         def address
-          @droplet.networks[0][0].ip_address
+          @attributes["network_interface"][0]["access_config"][0]["nat_ip"]
         end
 
         # Yields a `Remote::Shell` instance ready for running commands.
@@ -33,10 +26,30 @@ module Pakyow
           Shell.new(self, **options).when_available(&block)
         end
 
-        # Create a snapshot of the server.
+        # Create an image of the server.
         #
-        def snapshot!(name = @droplet.name)
-          @client.droplet_actions.snapshot(droplet_id: @droplet.id, name: name)
+        def image!(name: self.name, family:)
+          FileUtils.mkdir_p "./tmp"
+
+          ENV["TF_VAR_image_family"] = family
+          ENV["TF_VAR_image_name"] = name
+          ENV["TF_VAR_source_disk_url"] = @attributes["boot_disk"][0]["source"]
+
+          unless system "terraform init -input=false ./providers/#{@provider}/image"
+            fail "could not init"
+          end
+
+          unless system "terraform plan -out=./tmp/#{name}-image.tfplan -input=false ./providers/#{@provider}/image"
+            fail "could not plan"
+          end
+
+          unless system "terraform apply -input=false -state=./tmp/#{name}-image.tfstate ./tmp/#{name}-image.tfplan"
+            fail "could not apply"
+          end
+        ensure
+          FileUtils.rm_f "tmp/#{name}-image.tfstate"
+          FileUtils.rm_f "tmp/#{name}-image.tfstate.backup"
+          FileUtils.rm_f "tmp/#{name}-image.tfplan"
         end
       end
     end

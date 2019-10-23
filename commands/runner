@@ -34,9 +34,11 @@ OptionParser.new { |parser|
     options[:ruby] = ruby
   end
 
-  parser.on("-sSIZE", "--size=SIZE", "Droplet size (default: s-1vcpu-1gb)") do |size|
-    options[:size] = size
-  end
+  # TODO: Support this again.
+  #
+  # parser.on("-sSIZE", "--size=SIZE", "Droplet size (default: s-1vcpu-1gb)") do |size|
+  #   options[:size] = size
+  # end
 
   parser.on("-h", "--help", "Prints this help") do
     puts parser
@@ -58,36 +60,20 @@ options[:size] ||= "s-1vcpu-1gb"
 #
 fail "please pass a command to run" if ARGV.empty?
 
-# Find the latest snapshot.
-#
-require "droplet_kit"
-snapshot = DropletKit::Client.new(access_token: ENV["DIGITAL_OCEAN_KEY"]).snapshots.all.select { |s|
-  s.name.start_with?("pakyow-ci")
-}.sort_by(&:name).last
-
-exit_code = exit_code
+exit_code = 0
 require "pakyow/ci/remote/system"
+system "commands/generate-key"
 
 begin
   require "securerandom"
 
   ephemeral_options = {
-    name: "pakyow-ci-#{SecureRandom.hex(2)}-#{Time.now.to_i}",
-    ssh_keys: [ENV["DIGITAL_OCEAN_SSH_FINGERPRINT"]],
-    image: snapshot.id,
-    size: options[:size] || "s-1vcpu-1gb"
+    name: "pakyow-ci-#{SecureRandom.hex(2)}-#{Time.now.to_i}", image: "pakyow-ci"
   }
 
   puts "creating ephemeral server: #{ephemeral_options}"
-  Pakyow::CI::Remote::System.new.ephemeral(**ephemeral_options) do |server|
-    keys = [ENV["SSH_PRIVATE_KEY_PATH"]]
-    puts "opening remote shell with keys: #{keys}"
-
-    keys.each do |key|
-      fail "missing key: #{key}" unless File.exist?(File.expand_path(key))
-    end
-
-    server.shell(keys: keys) do |shell|
+  Pakyow::CI::Remote::System.ephemeral(**ephemeral_options) do |server|
+    server.shell do |shell|
       path_to_upload = File.expand_path(options[:path])
       puts "uploading: #{path_to_upload}"
       shell.upload path_to_upload

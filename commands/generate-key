@@ -1,0 +1,20 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+# Generates a public/private key.
+
+require "fileutils"
+require "sshkey"
+
+key = SSHKey.generate
+
+FileUtils.rm("id_rsa")
+FileUtils.rm("id_rsa.pub")
+
+File.open("id_rsa", "w+") { |file|
+  file.write key.private_key
+  file.chmod(0400)
+}
+
+File.open("id_rsa.pub", "w+") { |file|
+  file.write key.ssh_public_key
+}

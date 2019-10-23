@@ -47,6 +47,7 @@ GEM
     rubocop-performance (1.5.0)
       rubocop (>= 0.71.0)
     ruby-progressbar (1.10.1)
+    sshkey (2.0.0)
     standard (0.1.5)
       rubocop (~> 0.75.0)
       rubocop-performance (~> 1.5.0)
@@ -68,6 +69,7 @@ DEPENDENCIES
   ed25519
   net-scp
   net-ssh
+  sshkey
   standard
 
 BUNDLED WITH

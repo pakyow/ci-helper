@@ -13,5 +13,4 @@ We run CI in containers from ephemeral DigitalOcean droplets, created on demand 
 
 - [ ] Use Ansible instead of hard-coded commands for building images.
   * This is a pattern we already use elsewhere at Metabahn.
-- [ ] Assign resources to a specific project.
-  * More useful once DigitalOcean supports billing statements by project.
+- [ ] Add provider-specific server classes to correctly map attributes.

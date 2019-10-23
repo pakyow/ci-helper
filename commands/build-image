@@ -2,6 +2,8 @@
 # frozen_string_literal: true
 # Builds the base image for running containerized CI on DigitalOcean.
 
+require "securerandom"
+
 IMAGES = %w[
   pakyow/ci-ruby-2.5.7
   pakyow/ci-ruby-2.6.5
@@ -12,8 +14,10 @@ require "dotenv"
 Dotenv.load(".env.local", ".env")
 $LOAD_PATH.unshift File.expand_path(".", "lib")
 
+system "commands/generate-key"
+
 require "pakyow/ci/remote/system"
-Pakyow::CI::Remote::System.new.ephemeral(name: "pakyow-ci-#{Time.now.to_i}", ssh_keys: [ENV["DIGITAL_OCEAN_SSH_FINGERPRINT"]]) do |server|
+Pakyow::CI::Remote::System.ephemeral(name: "pakyow-ci-#{SecureRandom.hex(4)}") do |server|
   server.shell do |shell|
     # Install unzip.
     #
@@ -35,7 +39,12 @@ Pakyow::CI::Remote::System.new.ephemeral(name: "pakyow-ci-#{Time.now.to_i}", ssh
     IMAGES.each do |image|
       shell.run "docker pull #{image}"
     end
+
+    shell.run "poweroff"
+  rescue IOError
+    # we get this when the machine powers off
   end
 
-  server.snapshot!
+  puts "waiting 300s for the server to power off..."
+  sleep 300; server.image!(name: "pakyow-ci-#{Time.now.to_i}", family: "pakyow-ci")
 end

@@ -1,47 +1,45 @@
 # frozen_string_literal: true
 
-require "droplet_kit"
+require "json"
+require "fileutils"
 
 require "pakyow/ci/remote/server"
 
 module Pakyow
   module CI
     module Remote
-      # Wraps a DigitalOcean client.
+      # Interacts with a remote system.
       #
       class System
-        def initialize(digital_ocean_key: ENV["DIGITAL_OCEAN_KEY"])
-          @client = DropletKit::Client.new(access_token: digital_ocean_key)
-        end
-
         # Create an ephemeral droplet, which is yielded when created and automatically destroyed.
         #
-        def ephemeral(name:, region: "sfo2", image: "ubuntu-18-04-x64", size: "s-1vcpu-1gb", ssh_keys: [])
-          droplet = @client.droplets.create(
-            DropletKit::Droplet.new(
-              name: name,
-              region: region,
-              image: image,
-              size: size,
-              ssh_keys: ssh_keys,
-              monitoring: true
-            )
-          )
+        def self.ephemeral(name:, ssh_public_key: "./id_rsa.pub", provider: "gcp", image: nil)
+          FileUtils.mkdir_p "./tmp"
 
-          yield Server.new(wait_for_droplet(droplet), client: @client)
-        ensure
-          @client.droplets.delete(id: droplet&.id)
-        end
+          ENV["TF_VAR_source_image"] = image unless image.nil?
+          ENV["TF_VAR_instance_name"] = name
+          ENV["TF_VAR_ssh_public_key"] = ssh_public_key
 
-        private
-
-        def wait_for_droplet(droplet)
-          until droplet.status == "active"
-            puts "waiting for #{droplet.id} (status: #{droplet.status})"
-            sleep 5; droplet = @client.droplets.find(id: droplet.id)
+          unless system "terraform init -input=false ./providers/#{provider}/instance"
+            fail "could not init"
           end
 
-          droplet
+          unless system "terraform plan -out=./tmp/#{name}-instance.tfplan -input=false ./providers/#{provider}/instance >> /dev/null 2>&1"
+            fail "could not plan"
+          end
+
+          unless system "terraform apply -input=false -state=./tmp/#{name}-instance.tfstate ./tmp/#{name}-instance.tfplan"
+            fail "could not apply"
+          end
+
+          attributes = JSON.parse(File.read("./tmp/#{name}-instance.tfstate"))["resources"][0]["instances"][0]["attributes"]
+          yield Server.new(attributes: attributes, provider: provider)
+        ensure
+          if system "terraform destroy -auto-approve -state=./tmp/#{name}-instance.tfstate"
+            FileUtils.rm_f "tmp/#{name}-instance.tfstate"
+            FileUtils.rm_f "tmp/#{name}-instance.tfstate.backup"
+            FileUtils.rm_f "tmp/#{name}-instance.tfplan"
+          end
         end
       end
     end

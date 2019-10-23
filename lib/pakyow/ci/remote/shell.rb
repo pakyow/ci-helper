@@ -9,7 +9,7 @@ module Pakyow
       # Provides a remote shell to run commands on a `Remote::Server` instance.
       #
       class Shell
-        def initialize(server, user: "root", keys: ["~/.ssh/id_rsa"])
+        def initialize(server, user: "root", keys: ["./id_rsa"])
           @server, @user, @keys = server, user, keys
         end
 
@@ -40,9 +40,6 @@ module Pakyow
                 $stderr.print data
               end
 
-              # TODO: Need this?
-              # command.on_close do; end
-
               command.on_request "exit-status" do |_, data|
                 exit_code = data.read_long
               end
@@ -55,7 +52,7 @@ module Pakyow
         end
 
         def upload(path)
-          Net::SCP.upload!(@server.address, "root", path, "/root", ssh: { keys: @keys }, recursive: true)
+          Net::SCP.upload!(@server.address, "root", path, "/root", ssh: { keys: @keys }, recursive: true, verify_host_key: :never)
         end
 
         private
@@ -64,12 +61,12 @@ module Pakyow
           ssh; self
         rescue Net::SSH::ConnectionTimeout, Errno::ECONNREFUSED => error
           sleep 5 unless error.is_a?(Net::SSH::ConnectionTimeout)
-          puts "waiting for shell (server: #{@server.id}, error: #{error})"
+          puts "waiting for shell (server: #{@server.name}, error: #{error})"
           retry
         end
 
         def ssh
-          @ssh ||= Net::SSH.start(@server.address, @user, keys: @keys, timeout: 5)
+          @ssh ||= Net::SSH.start(@server.address, @user, keys: @keys, timeout: 5, verify_host_key: :never)
         end
       end
     end
