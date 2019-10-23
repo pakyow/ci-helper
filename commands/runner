@@ -68,7 +68,7 @@ begin
   require "securerandom"
 
   ephemeral_options = {
-    name: "pakyow-ci-#{SecureRandom.hex(2)}-#{Time.now.to_i}", image: "pakyow-ci"
+    name: "pakyow-ci-#{Time.now.to_i}-#{SecureRandom.hex(2)}", image: "pakyow-ci"
   }
 
   puts "creating ephemeral server: #{ephemeral_options}"
