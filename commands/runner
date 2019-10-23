@@ -61,6 +61,7 @@ options[:size] ||= "s-1vcpu-1gb"
 fail "please pass a command to run" if ARGV.empty?
 
 exit_code = 0
+retry_count = 0
 require "pakyow/ci/remote/system"
 system "commands/generate-key"
 
@@ -101,7 +102,15 @@ rescue => error
     #{error.backtrace.join("\n")}
   ERROR
 
-  exit_code = 1
+  if error.is_a?(IOError) && retry_count < 3
+    # Instance was probably preempted, so retry up to 3 times.
+
+    retry_count += 1
+    puts "retrying (#{retry_count} of 3)..."
+    retry
+  else
+    exit_code = 1
+  end
 end
 
 puts "exiting: #{exit_code}"
