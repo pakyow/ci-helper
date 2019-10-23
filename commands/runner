@@ -97,7 +97,7 @@ begin
   end
 rescue => error
   puts <<~ERROR
-    failed: #{error}
+    failed (#{error.class}): #{error}
     #{error.backtrace.join("\n")}
   ERROR
 
