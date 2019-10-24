@@ -57,9 +57,13 @@ module Pakyow
 
         private
 
-        def wait_until_available
-          ssh; self
-        rescue Net::SSH::ConnectionTimeout, Errno::ECONNREFUSED => error
+        def wait_until_available(started_at = Time.now)
+          if Time.now - started_at > 60
+            fail "could not connect via ssh after 60s (server: #{@server.name})"
+          else
+            ssh; self
+          end
+        rescue Net::SSH::ConnectionTimeout, Net::SSH::AuthenticationFailed, Errno::ECONNREFUSED => error
           sleep 5 unless error.is_a?(Net::SSH::ConnectionTimeout)
           puts "waiting for shell (server: #{@server.name}, error: #{error})"
           retry
