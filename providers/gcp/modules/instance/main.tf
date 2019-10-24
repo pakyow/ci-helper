@@ -3,7 +3,7 @@ variable "disk_size_gb" {
 }
 
 variable "machine_type" {
-  default = "n1-standard-2"
+  default = "n1-standard-1"
 }
 
 variable "name" {
