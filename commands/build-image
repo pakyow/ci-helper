@@ -14,11 +14,12 @@ require "dotenv"
 Dotenv.load(".env.local", ".env")
 $LOAD_PATH.unshift File.expand_path(".", "lib")
 
-system "commands/generate-key"
+require "sshkey"
+ssh_key = SSHKey.generate
 
 require "pakyow/ci/remote/system"
-Pakyow::CI::Remote::System.ephemeral(name: "pakyow-ci-#{SecureRandom.hex(4)}") do |server|
-  server.shell do |shell|
+Pakyow::CI::Remote::System.ephemeral(name: "pakyow-ci-#{SecureRandom.hex(4)}", ssh_public_key: ssh_key.ssh_public_key) do |server|
+  server.shell keys: [ssh_key.private_key] do |shell|
     # Install unzip.
     #
     shell.run "apt-get -y install unzip"

@@ -62,19 +62,23 @@ fail "please pass a command to run" if ARGV.empty?
 
 exit_code = 0
 retry_count = 0
+
 require "pakyow/ci/remote/system"
-system "commands/generate-key"
+require "securerandom"
+require "sshkey"
 
 begin
-  require "securerandom"
+  ssh_key = SSHKey.generate
 
   ephemeral_options = {
-    name: "pakyow-ci-#{Time.now.to_i}-#{SecureRandom.hex(2)}", image: "pakyow-ci"
+    name: "pakyow-ci-#{Time.now.to_i}-#{SecureRandom.hex(2)}",
+    image: "pakyow-ci",
+    ssh_public_key: ssh_key.ssh_public_key
   }
 
   puts "creating ephemeral server: #{ephemeral_options}"
   Pakyow::CI::Remote::System.ephemeral(**ephemeral_options) do |server|
-    server.shell do |shell|
+    server.shell keys: [ssh_key.private_key] do |shell|
       path_to_upload = File.expand_path(options[:path])
       puts "uploading: #{path_to_upload}"
       shell.upload path_to_upload

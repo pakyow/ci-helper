@@ -13,7 +13,7 @@ module Pakyow
       class System
         # Create an ephemeral droplet, which is yielded when created and automatically destroyed.
         #
-        def self.ephemeral(name:, ssh_public_key: "./id_rsa.pub", provider: "gcp", image: nil)
+        def self.ephemeral(name:, ssh_public_key:, provider: "gcp", image: nil)
           FileUtils.mkdir_p "./tmp"
 
           ENV["TF_VAR_source_image"] = image unless image.nil?

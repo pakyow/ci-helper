@@ -2,9 +2,6 @@
 
 .terraform
 
-id_rsa
-id_rsa.pub
-
 gcp.json
 
 tmp

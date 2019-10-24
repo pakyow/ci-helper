@@ -9,7 +9,7 @@ module Pakyow
       # Provides a remote shell to run commands on a `Remote::Server` instance.
       #
       class Shell
-        def initialize(server, user: "root", keys: ["./id_rsa"])
+        def initialize(server, user: "root", keys:)
           @server, @user, @keys = server, user, keys
         end
 
@@ -52,7 +52,7 @@ module Pakyow
         end
 
         def upload(path)
-          Net::SCP.upload!(@server.address, "root", path, "/root", ssh: { keys: @keys }, recursive: true, verify_host_key: :never)
+          Net::SCP.upload!(@server.address, "root", path, "/root", ssh: { key_data: @keys, verify_host_key: :never }, recursive: true)
         end
 
         private
@@ -66,7 +66,7 @@ module Pakyow
         end
 
         def ssh
-          @ssh ||= Net::SSH.start(@server.address, @user, keys: @keys, timeout: 5, verify_host_key: :never)
+          @ssh ||= Net::SSH.start(@server.address, @user, key_data: @keys, timeout: 5, verify_host_key: :never)
         end
       end
     end
