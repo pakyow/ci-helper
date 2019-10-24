@@ -24,7 +24,7 @@ module Pakyow
             fail "could not init"
           end
 
-          unless system "terraform plan -out=./tmp/#{name}-instance.tfplan -input=false ./providers/#{provider}/instance >> /dev/null 2>&1"
+          unless system "terraform plan -out=./tmp/#{name}-instance.tfplan -input=false ./providers/#{provider}/instance"
             fail "could not plan"
           end
 
