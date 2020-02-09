@@ -21,23 +21,29 @@ module Pakyow
 
         # Run a command, returning the exit code.
         #
-        def run(*command_parts)
+        def run(*command_parts, quiet: false)
           command_string = command_parts.join(" ")
 
           exit_code = nil
           ssh.open_channel { |channel|
-            puts "\n********************************************************************************"
-            puts "ssh: #{command_string}"
+            unless quiet
+              puts "\n********************************************************************************"
+              puts "ssh: #{command_string}"
+            end
 
             channel.exec command_string do |command, success|
               raise "could not execute command: #{command_string}" unless success
 
               command.on_data do |_, data|
-                $stdout.print data
+                unless quiet
+                  $stdout.print data
+                end
               end
 
               command.on_extended_data do |_, _type, data|
-                $stderr.print data
+                unless quiet
+                  $stderr.print data
+                end
               end
 
               command.on_request "exit-status" do |_, data|
@@ -45,7 +51,9 @@ module Pakyow
               end
             end
 
-            puts "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"
+            unless quiet
+              puts "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"
+            end
           }.wait
 
           exit_code
