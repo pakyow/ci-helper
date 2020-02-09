@@ -115,16 +115,11 @@ begin
       exit status
     }
 
-    puts "starting monitoring shell"
     server.shell keys: [ssh_key.private_key] do |shell|
-      puts "monitoring shell started"
       while pid_running?(pid)
-        puts "running monitoring command"
         shell.run "whoami", quiet: true
         sleep 1
       end
-
-      puts "done monitoring"
     end
 
     puts "waitpid #{pid}"
