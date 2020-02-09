@@ -67,7 +67,14 @@ require "pakyow/ci/remote/system"
 require "securerandom"
 require "sshkey"
 
+def pid_running?(pid)
+  Process.getpgid(pid); true
+rescue Errno::ESRCH
+  false
+end
+
 begin
+  pid = nil
   ssh_key = SSHKey.generate
 
   ephemeral_options = {
@@ -78,33 +85,57 @@ begin
 
   puts "creating ephemeral server: #{ephemeral_options}"
   Pakyow::CI::Remote::System.ephemeral(**ephemeral_options) do |server|
+    pid = Process.fork {
+      status = server.shell(keys: [ssh_key.private_key]) do |shell|
+        path_to_upload = File.expand_path(options[:path])
+        puts "uploading: #{path_to_upload}"
+        shell.upload path_to_upload
+
+        if File.extname(path_to_upload) == ".zip"
+          shell.run "unzip -q #{File.basename(path_to_upload)}"
+          remote_folder = File.basename(path_to_upload, File.extname(path_to_upload))
+        else
+          remote_folder = File.basename(path_to_upload)
+        end
+
+        shell.run "cd #{remote_folder}; docker-compose build --build-arg ruby=#{options[:ruby]}"
+
+        if options[:formation]
+          shell.run "cd #{remote_folder}; docker-compose up -d #{options[:formation]}" unless options[:formation].empty?
+          shell.run "cd #{remote_folder}; docker-compose run --no-deps #{options[:env].to_a.map { |e| "-e #{e}"}.join(" ")} pakyow-ci '#{ARGV.join(" ")}'"
+        else
+          shell.run "cd #{remote_folder}; docker-compose run #{options[:env].to_a.map { |e| "-e #{e}"}.join(" ")} pakyow-ci '#{ARGV.join(" ")}'"
+        end
+      rescue IOError
+        exit 3
+      end
+
+      exit status
+    }
+
     server.shell keys: [ssh_key.private_key] do |shell|
-      path_to_upload = File.expand_path(options[:path])
-      puts "uploading: #{path_to_upload}"
-      shell.upload path_to_upload
-
-      if File.extname(path_to_upload) == ".zip"
-        shell.run "unzip -q #{File.basename(path_to_upload)}"
-        remote_folder = File.basename(path_to_upload, File.extname(path_to_upload))
-      else
-        remote_folder = File.basename(path_to_upload)
+      while pid_running?(pid)
+        shell.run "whoami", quiet: true
+        sleep 1
       end
+    end
 
-      shell.run "cd #{remote_folder}; docker-compose build --build-arg ruby=#{options[:ruby]}"
-
-      exit_code = if options[:formation]
-        shell.run "cd #{remote_folder}; docker-compose up -d #{options[:formation]}" unless options[:formation].empty?
-        shell.run "cd #{remote_folder}; docker-compose run --no-deps #{options[:env].to_a.map { |e| "-e #{e}"}.join(" ")} pakyow-ci '#{ARGV.join(" ")}'"
-      else
-        shell.run "cd #{remote_folder}; docker-compose run #{options[:env].to_a.map { |e| "-e #{e}"}.join(" ")} pakyow-ci '#{ARGV.join(" ")}'"
-      end
+    Process.waitpid(pid)
+    if $?.exitstatus == 3
+      raise IOError
+    else
+      exit_code = $?.exitstatus
     end
   end
 rescue => error
   puts <<~ERROR
     failed (#{error.class}): #{error}
-    #{error.backtrace.join("\n")}
   ERROR
+
+  begin
+    Process.kill("HUP", pid) if pid
+  rescue Errno::ESRCH
+  end
 
   if error.is_a?(IOError) && retry_count < 3
     # Instance was probably preempted, so retry up to 3 times.
