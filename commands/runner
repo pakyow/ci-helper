@@ -11,6 +11,8 @@ require "dotenv"
 Dotenv.load(".env.local", ".env")
 $LOAD_PATH.unshift File.expand_path(".", "lib")
 
+require "fileutils"
+
 # Parse command line options.
 #
 options = {}
@@ -67,12 +69,6 @@ require "pakyow/ci/remote/system"
 require "securerandom"
 require "sshkey"
 
-def pid_running?(pid)
-  Process.getpgid(pid); true
-rescue Errno::ESRCH
-  false
-end
-
 begin
   pid = nil
   ssh_key = SSHKey.generate
@@ -107,19 +103,22 @@ begin
           shell.run "cd #{remote_folder}; docker-compose run #{options[:env].to_a.map { |e| "-e #{e}"}.join(" ")} pakyow-ci '#{ARGV.join(" ")}'"
         end
       rescue IOError
+        system "touch ./pwci-done"
         exit 3
       end
 
+      system "touch ./pwci-done"
       exit status
     }
 
     server.shell keys: [ssh_key.private_key] do |shell|
-      while pid_running?(pid)
+      while !File.exist?("./pwci-done")
         shell.run "whoami", quiet: true
         sleep 1
       end
     end
 
+    FileUtils.rm_f "./pwci-done"
     Process.waitpid(pid)
     if $?.exitstatus == 3
       raise IOError
