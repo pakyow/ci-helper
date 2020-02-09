@@ -107,11 +107,9 @@ begin
           shell.run "cd #{remote_folder}; docker-compose run #{options[:env].to_a.map { |e| "-e #{e}"}.join(" ")} pakyow-ci '#{ARGV.join(" ")}'"
         end
       rescue IOError
-        puts "forked: exit 3 (ioerror)"
         exit 3
       end
 
-      puts "forked: exit #{status}"
       exit status
     }
 
@@ -122,10 +120,7 @@ begin
       end
     end
 
-    puts "waitpid #{pid}"
     Process.waitpid(pid)
-
-    puts "pid status #{$?.exitstatus}"
     if $?.exitstatus == 3
       raise IOError
     else
