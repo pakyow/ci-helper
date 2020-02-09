@@ -1,63 +1,33 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    addressable (2.7.0)
-      public_suffix (>= 2.0.2, < 5.0)
     ast (2.4.0)
-    axiom-types (0.1.1)
-      descendants_tracker (~> 0.0.4)
-      ice_nine (~> 0.11.0)
-      thread_safe (~> 0.3, >= 0.3.1)
     bcrypt_pbkdf (1.0.1)
-    coercible (1.0.0)
-      descendants_tracker (~> 0.0.1)
-    descendants_tracker (0.0.4)
-      thread_safe (~> 0.3, >= 0.3.1)
     dotenv (2.7.5)
-    droplet_kit (3.2.0)
-      faraday (~> 0.15)
-      kartograph (~> 0.2.3)
-      resource_kit (~> 0.1.5)
-      virtus (~> 1.0.3)
     ed25519 (1.2.4)
-    equalizer (0.0.11)
-    faraday (0.17.0)
-      multipart-post (>= 1.2, < 3)
-    ice_nine (0.11.2)
-    jaro_winkler (1.5.3)
-    kartograph (0.2.7)
-    multipart-post (2.1.1)
+    jaro_winkler (1.5.4)
     net-scp (2.0.0)
       net-ssh (>= 2.6.5, < 6.0.0)
     net-ssh (5.2.0)
-    parallel (1.18.0)
-    parser (2.6.5.0)
+    parallel (1.19.1)
+    parser (2.7.0.2)
       ast (~> 2.4.0)
-    public_suffix (4.0.1)
     rainbow (3.0.0)
-    resource_kit (0.1.7)
-      addressable (>= 2.3.6, < 3.0.0)
-    rubocop (0.75.1)
+    rubocop (0.77.0)
       jaro_winkler (~> 1.5.1)
       parallel (~> 1.10)
       parser (>= 2.6)
       rainbow (>= 2.2.2, < 4.0)
       ruby-progressbar (~> 1.7)
       unicode-display_width (>= 1.4.0, < 1.7)
-    rubocop-performance (1.5.0)
+    rubocop-performance (1.5.2)
       rubocop (>= 0.71.0)
     ruby-progressbar (1.10.1)
     sshkey (2.0.0)
-    standard (0.1.5)
-      rubocop (~> 0.75.0)
-      rubocop-performance (~> 1.5.0)
-    thread_safe (0.3.6)
-    unicode-display_width (1.6.0)
-    virtus (1.0.5)
-      axiom-types (~> 0.1)
-      coercible (~> 1.0)
-      descendants_tracker (~> 0.0, >= 0.0.3)
-      equalizer (~> 0.0, >= 0.0.9)
+    standard (0.1.7)
+      rubocop (~> 0.77.0)
+      rubocop-performance (~> 1.5.1)
+    unicode-display_width (1.6.1)
 
 PLATFORMS
   ruby
@@ -65,7 +35,6 @@ PLATFORMS
 DEPENDENCIES
   bcrypt_pbkdf
   dotenv
-  droplet_kit
   ed25519
   net-scp
   net-ssh
@@ -73,4 +42,4 @@ DEPENDENCIES
   standard
 
 BUNDLED WITH
-   2.0.2
+   2.1.2
