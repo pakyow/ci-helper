@@ -60,7 +60,16 @@ module Pakyow
         end
 
         def upload(path)
-          Net::SCP.upload!(@server.address, "root", path, "/root", ssh: { key_data: @keys, verify_host_key: :never }, recursive: true)
+          Net::SCP.upload!(
+            @server.address, "root", path, "/root",
+            ssh: {
+              key_data: @keys,
+              verify_host_key: :never,
+              keepalive: true,
+              keepalive_interval: 15
+            },
+            recursive: true
+          )
         end
 
         private
